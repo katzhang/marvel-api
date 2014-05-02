@@ -13,6 +13,19 @@ $.ajax({
 	url: url,
 	type: "GET",
 	success: function(data) {
-		console.log(data);
+		var charArray = data.data.results;
+		console.log(charArray);
+
+		charArray.forEach(function(character) {
+			var name = character.name;
+			var des = character.description;
+			var thumbnailPath = character.thumbnail.path;
+			var thumbnailExt = character.thumbnail.extension;
+
+			thumbnailPath += "/portrait_small" + "." + thumbnailExt;
+			$('.marketing').append('<h6>' + name + '</h6>');
+			$('.marketing').append('<img src="' + thumbnailPath + '"/>')
+
+		})
 	}
 })
