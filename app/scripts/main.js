@@ -11,12 +11,29 @@ var url = baseUrl + entity + limit + "&" + filter + "&" + key;
 
 $.ajax({
 	url: url,
+	cache: true,
+	dataFilter: function(data, type) {
+		if(type === 'json') {
+			var parsed = JSON.parse(data);
+			var chars = parsed.data.results;
+			chars = $.grep(chars, function(char, i) {
+				if(char.thumbnail.path.match("available")) {
+					return false;
+				}
+				return true;
+			})
+			parsed.data.results = chars;
+		}
+
+		return JSON.stringify(parsed);
+	},
+	dataType: "json",
 	type: "GET",
 	success: function(data) {
-		var charArray = data.data.results;
-		console.log(charArray);
+		var chars = data.data.results;
+		console.log(chars);
 
-		charArray.forEach(function(character) {
+		chars.forEach(function(character) {
 			var name = character.name;
 			var des = character.description;
 			var thumbnailPath = character.thumbnail.path;
