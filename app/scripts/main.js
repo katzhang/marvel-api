@@ -44,14 +44,18 @@ $.ajax({
 
 			thumbnailPath += "/portrait_small" + "." + thumbnailExt;
 
-			characters.push({name: name, value: storiesNum, imgPath: thumbnailPath});
+			characters.push({"charName": name, "value": storiesNum, "imgPath": thumbnailPath});
 
 			$('.marketing').append('<h6>' + name + '</h6>');
 			$('.marketing').append('<img src="' + thumbnailPath + '"/>')
 
 		})
 
+		characters = {children: characters};
+		// characters = {"children": characters};
+
 		console.log(characters);
+		bindData(characters);
 	}
 })
 
@@ -69,12 +73,17 @@ var svg = d3.select("body").append("svg")
 	.attr("height", diameter)
 	.attr("class", "bubble");
 
+// console.log(bubble.nodes(characters));
+
 function bindData(charsData) {
 	var node = svg.selectAll(".node")
-		.data(bubble.nodes(charsData)
+		.data(bubble.nodes(charsData))
+      	// .filter(function(d) { return !d.children; }))
 		.enter().append("g")
 		.attr("class", "node")
-		.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+		.attr("transform", function(d) {
+			return "translate(" + d.x + "," + d.y + ")"
+		});
 
 	node.append("title")
 		.text(function(d) { return d.className + ":" + format(d.value); });
@@ -89,14 +98,14 @@ function bindData(charsData) {
       	.text(function(d) { return d.className.substring(0, d.r / 3); });
 }
 
-bindData(characters);
+// bindData(characters);
 
 // function classes(root) {
 //   var classes = [];
 
 //   function recurse(name, node) {
 //     if (node.children) node.children.forEach(function(child) { recurse(node.name, child); });
-//     else classes.push({packageName: name, className: node.name, value: node.size});
+//     else classes.push({packageName: node.name, className: node.name, value: node.value});
 //   }
 
 //   recurse(null, root);
