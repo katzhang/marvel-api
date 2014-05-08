@@ -42,16 +42,16 @@ $.ajax({
 			var thumbnailExt = character.thumbnail.extension;
 			var storiesNum = character.stories.available;
 
-			thumbnailPath += "/portrait_small" + "." + thumbnailExt;
+			thumbnailPath += "/standard_xlarge" + "." + thumbnailExt;
 
 			characters.push({"charName": name, "value": storiesNum, "imgPath": thumbnailPath});
 
-			$('.marketing').append('<h6>' + name + '</h6>');
-			$('.marketing').append('<img src="' + thumbnailPath + '"/>')
+			// $('.marketing').append('<h6>' + name + '</h6>');
+			// $('.marketing').append('<img src="' + thumbnailPath + '"/>')
 
 		})
 
-		characters = {children: characters};
+		characters = {name: "marvel", children: characters};
 		// characters = {"children": characters};
 
 		console.log(characters);
@@ -73,12 +73,14 @@ var svg = d3.select("body").append("svg")
 	.attr("height", diameter)
 	.attr("class", "bubble");
 
+var defs = svg.append('svg:defs');
+
 // console.log(bubble.nodes(characters));
 
 function bindData(charsData) {
 	var node = svg.selectAll(".node")
-		.data(bubble.nodes(charsData))
-      	// .filter(function(d) { return !d.children; }))
+		.data(bubble.nodes(charsData)
+      	.filter(function(d) { return !d.children; }))
 		.enter().append("g")
 		.attr("class", "node")
 		.attr("transform", function(d) {
@@ -86,31 +88,34 @@ function bindData(charsData) {
 		});
 
 	node.append("title")
-		.text(function(d) { return d.className + ":" + format(d.value); });
+		.text(function(d) { return d.name + ":" + format(d.value); });
 
 	node.append("circle")
     	.attr("r", function(d) { return d.r; })
-       	.style("fill", function(d) { return color(d.packageName); });
+       	.style("fill", function(d) { return addPatterns(d) });
+
+    addPatterns
 
   	node.append("text")
       	.attr("dy", ".3em")
       	.style("text-anchor", "middle")
-      	.text(function(d) { return d.className.substring(0, d.r / 3); });
+      	.text(function(d) { return d.name.substring(0, d.r / 3); });
 }
 
-// bindData(characters);
+function addPatterns(character) {
+	defs.append('pattern')
+		.attr('id', 'url' + character.imgPath)
+		.attr('width', '100%')
+		.attr('height', '100%')
+		.append('image')
+		.attr('xlink:href', character.imgPath)
+		.attr('x', 0)
+		.attr('y', 0)
+		.attr('width', character.r*2)
+		.attr('height', character.r*2);
 
-// function classes(root) {
-//   var classes = [];
-
-//   function recurse(name, node) {
-//     if (node.children) node.children.forEach(function(child) { recurse(node.name, child); });
-//     else classes.push({packageName: node.name, className: node.name, value: node.value});
-//   }
-
-//   recurse(null, root);
-//   return {children: classes};
-// }
+	return "url(/#url" + character.imgPath + ")"
+}
 
 d3.select(self.frameElement).style("height", diameter + "px");
 
