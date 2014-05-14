@@ -9,10 +9,12 @@ var url = baseUrl + entity + limit  + "&" + key;
 
 var characters = [];
 
-function ajaxCall(filterLetter) {
+var dataParsed;
+
+function ajaxCall(filterLetter, offset) {
 
 	var filter = "nameStartsWith=" + filterLetter;
-	var filteredUrl = url + "&" + filter;
+	var filteredUrl = !offset ? url + "&" + filter : url + "&" + filter + "&offset=" + offset;
 
 	console.log(filteredUrl);
 
@@ -37,45 +39,52 @@ function ajaxCall(filterLetter) {
 		dataType: "json",
 		type: "GET",
 		success: function(data) {
-			var chars = data.data.results;
 			console.log(data);
-			console.log(chars);
+			dataParsed = data.data.results;
 
-			chars.forEach(function(character) {
+			dataParsed.forEach(function(character) {
 				var name = character.name;
 				var des = character.description;
+				var charId = character.id;
 				var thumbnailPath = character.thumbnail.path;
 				var thumbnailExt = character.thumbnail.extension;
 				var storiesNum = character.stories.available;
 
 				thumbnailPath += "/standard_xlarge" + "." + thumbnailExt;
 
-				characters.push({"charName": name, "value": storiesNum, "imgPath": thumbnailPath});
+				characters.push({"charName": name, "charId": charId,"value": storiesNum, "imgPath": thumbnailPath});
 
 			})
 		}
 	})
 }
 
-var alphabet = "abcdefghijklmnopqrstuvwxyz".split('');
-var ajaxCalls = [];
+function init() {
+	var alphabet = "abcdefghijklmnopqrstuvwxyz".split('');
+	var ajaxCalls = [];
 
-for(var i = 0; i < alphabet.length; i++) {
-	ajaxCalls.push(ajaxCall(alphabet[i]));
-	console.log(ajaxCalls);
+	for(var i = 0; i < alphabet.length; i++) {
+		ajaxCalls.push(ajaxCall(alphabet[i]));
+	}
+
+	ajaxCalls.push(ajaxCall('s', 100))
+
+	$.when.apply(this, ajaxCalls).done(function() {
+		console.log(characters);
+		console.log(dataParsed);
+		bindData({name: 'marvel', children: characters});
+	})
 }
 
-$.when.apply(this, ajaxCalls).done(function() {
-	console.log(characters);
-	bindData({name: 'marvel', children: characters});
-})
+init();
 
-// $.when(ajaxCall('a')).done(function() {
+
+// $.when(ajaxCall('s'), ajaxCall('s', 100)).done(function() {
 // 	console.log(characters);
 // 	bindData({name: 'marvel', children: characters});
 // })
 
-var diameter = 960;
+var diameter = 1024;
 var format = d3.format(",d");
 var color = d3.scale.category20c();
 
@@ -99,28 +108,22 @@ function bindData(charsData) {
       	.filter(function(d) { return !d.children; }))
 		.enter().append("g")
 		.attr("class", "node")
+		.attr("data-char-id", function(d) { return d.charId })
 		.attr("transform", function(d) {
 			return "translate(" + d.x + "," + d.y + ")"
 		});
 
 	node.append("title")
-		.text(function(d) { return d.name + ":" + format(d.value); });
+		.text(function(d) { return d.charName + ":" + format(d.value); });
 
 	node.append("circle")
     	.attr("r", function(d) { return d.r; })
        	.style("fill", function(d) { return addPatterns(d) });
-
-    addPatterns
-
-  	// node.append("text")
-   //    	.attr("dy", ".3em")
-   //    	.style("text-anchor", "middle")
-   //    	.text(function(d) { return d.charName.substring(0, d.r / 3); });
 }
 
 function addPatterns(character) {
 	defs.append('pattern')
-		.attr('id', 'url' + character.imgPath)
+		.attr('id', character.charId)
 		.attr('width', '100%')
 		.attr('height', '100%')
 		.append('image')
@@ -130,10 +133,52 @@ function addPatterns(character) {
 		.attr('width', character.r*2)
 		.attr('height', character.r*2);
 
-	return "url(/#url" + character.imgPath + ")"
+	return "url(/#" + character.charId + ")"
 }
 
 d3.select(self.frameElement).style("height", diameter + "px");
+
+$('svg').on('click', 'g', function() {
+	console.log('g clicked');
+	var charId = $(this).data('char-id');
+	var character;
+	console.log(charId);
+
+
+	// for(var i = 0; i < dataParsed.length; i++) {
+	// 	if(dataParsed[i].id === charId) {
+	// 		console.log('id same');
+	// 		character = dataParsed[i];
+	// 	}
+	// }
+
+	// var eventsUrl = character.events.collectionURI;
+
+	$.ajax({
+		url: "http://gateway.marvel.com:80/v1/public/characters/1009610/series" + "?" + key,
+		type: "GET",
+		success: function(data) {
+			parseSeries(data);
+		}
+	})
+
+})
+
+
+function parseSeries(data) {
+	var series = data.data.results;
+	var seriesParsed = [];
+
+	series.forEach(function(serie) {
+		var title = serie.title;
+		var id = serie.id;
+		var startYear = serie.startYear;
+
+		seriesParsed.push({seriesTitle: title, seriesId: id, seriesStartYear: startYear});
+	})
+
+	console.log(seriesParsed);
+}
 
 
 
