@@ -1,4 +1,41 @@
-console.log(jQuery);
+var Marvel = {
+
+	config: {
+		key: "587705ba5ff4d0cabadddbbbe5cb3545",
+		baseUrl: "http://gateway.marvel.com:80/v1/public/",
+		limit: "100",
+		imgFormat: "standard_xlarge"
+	},
+
+	data: {
+		characters: [],
+		series: []
+	},
+
+	apiCall: function(url, callBack, filter) {
+
+		var settings = {
+			url: url,
+			cache: true,
+			success: function(data) {
+				callBack(data);
+			}
+		};
+
+		if(filter) settings[dataFilter] = filter;
+
+		return $.ajax(settings);
+	},
+
+	parseData: function(data, output, outputKeys) {
+		var results = data.data.results;
+
+		results.forEach(function(result) {
+
+		})
+	}
+
+}
 
 var key = "apikey=587705ba5ff4d0cabadddbbbe5cb3545";
 var entity = "characters?";
@@ -11,7 +48,7 @@ var characters = [];
 
 var dataParsed = [];
 
-var seriesYear = [{date: '2001', close: 10}, {date: '2004', close: 12}, {date: '2007', close: 15}];
+// var seriesYear = [{date: '2001', close: 10}, {date: '2004', close: 12}, {date: '2007', close: 15}];
 
 function ajaxCall(filterLetter, offset) {
 
@@ -213,25 +250,6 @@ function parseSeries(data) {
 	console.log(lineData);
 
 	lineChart(lineData);
-
-	// for(var i = 0; i < seriesParsed.length; i++) {
-	// 	if(!seriesYear.length) {
-	// 		seriesYear[seriesParsed[i].seriesStartYear.toString()] = 1;
-	// 	} else {
-	// 		for(var j = 0; j < seriesYear.length; j++) {
-	// 			if(!(seriesParsed[i].seriesStartYear.toString() in seriesYear[j])) {
-	// 				seriesYear[j][seriesParsed[i].seriesStartYear.toString()] = 1;
-	// 			} else {
-	// 				seriesYear[j][seriesParsed[i].seriesStartYear.toString()] += 1;
-	// 			}
-	// 		}
-	// 	}
-
-
-	// }
-
-
-
 }
 
 function lineChart(data) {
