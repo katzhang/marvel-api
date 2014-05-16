@@ -9,14 +9,14 @@ var url = baseUrl + entity + limit  + "&" + key;
 
 var characters = [];
 
-var dataParsed;
+var dataParsed = [];
+
+var seriesYear = [{date: '2001', close: 10}, {date: '2004', close: 12}, {date: '2007', close: 15}];
 
 function ajaxCall(filterLetter, offset) {
 
 	var filter = "nameStartsWith=" + filterLetter;
 	var filteredUrl = !offset ? url + "&" + filter : url + "&" + filter + "&offset=" + offset;
-
-	console.log(filteredUrl);
 
 	return $.ajax({
 		url: filteredUrl,
@@ -39,10 +39,9 @@ function ajaxCall(filterLetter, offset) {
 		dataType: "json",
 		type: "GET",
 		success: function(data) {
-			console.log(data);
-			dataParsed = data.data.results;
+			var results = data.data.results;
 
-			dataParsed.forEach(function(character) {
+			results.forEach(function(character) {
 				var name = character.name;
 				var des = character.description;
 				var charId = character.id;
@@ -53,6 +52,8 @@ function ajaxCall(filterLetter, offset) {
 				thumbnailPath += "/standard_xlarge" + "." + thumbnailExt;
 
 				characters.push({"charName": name, "charId": charId,"value": storiesNum, "imgPath": thumbnailPath});
+
+				dataParsed.push(character);
 
 			})
 		}
@@ -70,8 +71,6 @@ function init() {
 	ajaxCalls.push(ajaxCall('s', 100))
 
 	$.when.apply(this, ajaxCalls).done(function() {
-		console.log(characters);
-		console.log(dataParsed);
 		bindData({name: 'marvel', children: characters});
 	})
 }
@@ -139,30 +138,56 @@ function addPatterns(character) {
 d3.select(self.frameElement).style("height", diameter + "px");
 
 $('svg').on('click', 'g', function() {
-	console.log('g clicked');
 	var charId = $(this).data('char-id');
 	var character;
 	console.log(charId);
 
 
-	// for(var i = 0; i < dataParsed.length; i++) {
-	// 	if(dataParsed[i].id === charId) {
-	// 		console.log('id same');
-	// 		character = dataParsed[i];
-	// 	}
-	// }
+	for(var i = 0; i < dataParsed.length; i++) {
+		if(dataParsed[i].id == charId) {
+			character = dataParsed[i];
+		}
+	}
 
-	// var eventsUrl = character.events.collectionURI;
+	var eventsUrl = character.series.collectionURI;
 
 	$.ajax({
-		url: "http://gateway.marvel.com:80/v1/public/characters/1009610/series" + "?" + key,
+		// url: "http://gateway.marvel.com:80/v1/public/characters/1009610/series" + "?" + key,
+		url: eventsUrl + "?" + key,
 		type: "GET",
 		success: function(data) {
+			console.log(data)
 			parseSeries(data);
 		}
 	})
 
 })
+
+function countProp(array) {
+	var output = [];
+
+	for(var i = 0; i < array.length; i++) {
+		var obj = array[i];
+
+		var needNew = output.every(function(el, index) {
+						return el['date'] != obj.seriesStartYear;
+					});
+
+		if(needNew) {
+			output.push({date: obj.seriesStartYear.toString(), close: 1});
+		} else {
+			output.forEach(function(el, index) {
+				if(el.date == obj.seriesStartYear) {
+					el.close += 1;
+				}
+			})
+		}
+		
+
+	}
+
+	return output;
+}
 
 
 function parseSeries(data) {
@@ -178,7 +203,101 @@ function parseSeries(data) {
 	})
 
 	console.log(seriesParsed);
+
+	var lineData = countProp(seriesParsed);
+
+	lineData.sort(function(a,b) {
+		return a.date - b.date;
+	})
+
+	console.log(lineData);
+
+	lineChart(lineData);
+
+	// for(var i = 0; i < seriesParsed.length; i++) {
+	// 	if(!seriesYear.length) {
+	// 		seriesYear[seriesParsed[i].seriesStartYear.toString()] = 1;
+	// 	} else {
+	// 		for(var j = 0; j < seriesYear.length; j++) {
+	// 			if(!(seriesParsed[i].seriesStartYear.toString() in seriesYear[j])) {
+	// 				seriesYear[j][seriesParsed[i].seriesStartYear.toString()] = 1;
+	// 			} else {
+	// 				seriesYear[j][seriesParsed[i].seriesStartYear.toString()] += 1;
+	// 			}
+	// 		}
+	// 	}
+
+
+	// }
+
+
+
 }
+
+function lineChart(data) {
+	var margin = {top: 20, right: 20, bottom: 30, left: 50},
+	    width = 960 - margin.left - margin.right,
+	    height = 500 - margin.top - margin.bottom;
+
+	var parseDate = d3.time.format("%Y").parse;
+
+	// var parseDate = d3.time.format("%d-%b-%y").parse;
+
+	var x = d3.time.scale()
+	    .range([0, width]);
+
+	var y = d3.scale.linear()
+	    .range([height, 0]);
+
+	var xAxis = d3.svg.axis()
+	    .scale(x)
+	    .orient("bottom");
+
+	var yAxis = d3.svg.axis()
+	    .scale(y)
+	    .orient("left");
+
+	var line = d3.svg.line()
+	    .x(function(d) { return x(d.date); })
+	    .y(function(d) { return y(d.close); });
+
+	var svg = d3.select("body").append("svg")
+	    .attr("width", width + margin.left + margin.right)
+	    .attr("height", height + margin.top + margin.bottom)
+	  .append("g")
+	    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+	data.forEach(function(d) {
+		d.date = parseDate(d.date);
+		d.close = +d.close;
+	})
+
+
+
+	  x.domain(d3.extent(data, function(d) { console.log(d); return d.date; }));
+	  y.domain(d3.extent(data, function(d) { return d.close; }));
+
+	  svg.append("g")
+	      .attr("class", "x axis")
+	      .attr("transform", "translate(0," + height + ")")
+	      .call(xAxis);
+
+	  svg.append("g")
+	      .attr("class", "y axis")
+	      .call(yAxis)
+	    .append("text")
+	      .attr("transform", "rotate(-90)")
+	      .attr("y", 6)
+	      .attr("dy", ".71em")
+	      .style("text-anchor", "end")
+	      .text("Price ($)");
+
+	  svg.append("path")
+	      .datum(data)
+	      .attr("class", "line")
+	      .attr("d", line);
+}
+
 
 
 
