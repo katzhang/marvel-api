@@ -56,7 +56,24 @@ function ajaxCall(filterLetter, offset) {
 	var filteredUrl = !offset ? url + "&" + filter : url + "&" + filter + "&offset=" + offset;
 
 	return $.ajax({
+
+	   xhr: function() {
+	        var xhr = new window.XMLHttpRequest();
+
+	       xhr.addEventListener("progress", function(e) {
+				var percent = e.loaded / e.position * 100;
+		        $('.progress-bar').attr('aria-valuenow', percent);
+		        $('.progress-bar').css('width', percent + '%');
+	       }, false);
+
+	       return xhr;
+	    },
 		url: filteredUrl,
+		beforeSend: function(XHR) {
+			XHR.onprogress = function(e) {
+				console.log(e.loaded);
+			}
+		},
 		cache: true,
 		dataFilter: function(data, type) {
 			if(type === 'json') {
@@ -75,8 +92,17 @@ function ajaxCall(filterLetter, offset) {
 		},
 		dataType: "json",
 		type: "GET",
-		success: function(data) {
+		// xhrFields: {
+		// 	onprogress: function(e) {
+
+		// 		console.log(e);
+		// 		console.log(e.loaded/e.position * 100);
+		// 	}
+		// },
+		success: function(data, status, XHR) {
 			var results = data.data.results;
+
+			// console.log(XHR.getAllResponseHeaders());
 
 			results.forEach(function(character) {
 				var name = character.name;
