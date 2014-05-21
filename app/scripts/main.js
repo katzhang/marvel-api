@@ -171,6 +171,8 @@ function bindData(charsData) {
 		.enter().append("g")
 		.attr("class", "node")
 		.attr("data-char-id", function(d) { return d.charId })
+		.attr("data-toggle", "modal")
+		.attr("data-target", ".bs-example-modal-lg")
 		.attr("transform", function(d) {
 			return "translate(" + d.x + "," + d.y + ")"
 		});
@@ -200,10 +202,12 @@ function addPatterns(character) {
 
 d3.select(self.frameElement).style("height", diameter + "px");
 
-$('svg').on('click', 'g', function() {
+$('svg').on('click', 'g', function(e) {
 	var charId = $(this).data('char-id');
 	var character;
+
 	console.log(charId);
+	$('.modal-content').html(charId);
 
 
 	for(var i = 0; i < dataParsed.length; i++) {
@@ -215,12 +219,12 @@ $('svg').on('click', 'g', function() {
 	var eventsUrl = character.series.collectionURI;
 
 	$.ajax({
-		// url: "http://gateway.marvel.com:80/v1/public/characters/1009610/series" + "?" + key,
 		url: eventsUrl + "?" + key,
 		type: "GET",
 		success: function(data) {
 			console.log(data)
-			parseSeries(data);
+			var lineData = parseSeries(data);
+			lineChart(lineData, '.modal-content');
 		}
 	})
 
@@ -273,12 +277,10 @@ function parseSeries(data) {
 		return a.date - b.date;
 	})
 
-	console.log(lineData);
-
-	lineChart(lineData);
+	return lineData;
 }
 
-function lineChart(data) {
+function lineChart(data, context) {
 	var margin = {top: 20, right: 20, bottom: 30, left: 50},
 	    width = 960 - margin.left - margin.right,
 	    height = 500 - margin.top - margin.bottom;
@@ -305,7 +307,7 @@ function lineChart(data) {
 	    .x(function(d) { return x(d.date); })
 	    .y(function(d) { return y(d.close); });
 
-	var svg = d3.select("body").append("svg")
+	var svg = d3.select(context).append("svg")
 	    .attr("width", width + margin.left + margin.right)
 	    .attr("height", height + margin.top + margin.bottom)
 	  .append("g")
@@ -314,6 +316,7 @@ function lineChart(data) {
 	data.forEach(function(d) {
 		d.date = parseDate(d.date);
 		d.close = +d.close;
+
 	})
 
 
