@@ -202,6 +202,8 @@ function addPatterns(character) {
 
 d3.select(self.frameElement).style("height", diameter + "px");
 
+var seriesParsed = [];
+
 $('svg').on('click', 'g', function(e) {
 	var charId = $(this).data('char-id');
 	var character;
@@ -217,18 +219,49 @@ $('svg').on('click', 'g', function(e) {
 	}
 
 	var eventsUrl = character.series.collectionURI;
+	var url = eventsUrl + "?" + key + '&limit=100';
+	var total;
 
 	$.ajax({
-		url: eventsUrl + "?" + key,
+		url: url,
 		type: "GET",
 		success: function(data) {
 			console.log(data)
-			var lineData = parseSeries(data);
-			lineChart(lineData, '.modal-content');
+			total = data.data.total;
+			console.log(total);
+			parseSeriesHelper(data)
+
+			callSeries(url, total);
+			// var lineData = parseSeries(data);
+			// lineChart(lineData, '.modal-content');
 		}
 	})
 
+
 })
+
+function callSeries(url, total) {
+
+	for(var i = 1; i < total/100; i++) {
+		$.ajax({
+			url: url + '&offset=' + i*100,
+			type: "GET",
+			success: function(data) {
+				console.log(data)
+				console.log('total: ' + total);
+				parseSeriesHelper(data);
+
+				if(i > total/100) {
+					var lineData = parseSeries();
+					lineChart(lineData, '.modal-content');
+				}
+			}
+		})
+	}
+
+
+}
+
 
 function countProp(array) {
 	var output = [];
@@ -256,10 +289,8 @@ function countProp(array) {
 	return output;
 }
 
-
-function parseSeries(data) {
+function parseSeriesHelper(data) {
 	var series = data.data.results;
-	var seriesParsed = [];
 
 	series.forEach(function(serie) {
 		var title = serie.title;
@@ -270,6 +301,10 @@ function parseSeries(data) {
 	})
 
 	console.log(seriesParsed);
+}
+
+
+function parseSeries() {
 
 	var lineData = countProp(seriesParsed);
 
