@@ -203,6 +203,7 @@ function addPatterns(character) {
 d3.select(self.frameElement).style("height", diameter + "px");
 
 var seriesParsed = [];
+var ajaxSeriesCalls = [];
 
 $('svg').on('click', 'g', function(e) {
 	var charId = $(this).data('char-id');
@@ -229,21 +230,29 @@ $('svg').on('click', 'g', function(e) {
 			console.log(data)
 			total = data.data.total;
 			console.log(total);
-			parseSeriesHelper(data)
+			parseSeriesHelper(data);
 
-			callSeries(url, total);
-			// var lineData = parseSeries(data);
-			// lineChart(lineData, '.modal-content');
+			for(var i = 1; i < total/100; i++) {
+				ajaxSeriesCalls.push(callSeries(url, total, i));
+			}
+
+			$.when.apply(this, ajaxSeriesCalls).done(function() {
+				var lineData = parseSeries();
+				lineChart(lineData, '.modal-content');
+			})
+
+			// callSeries(url, total);
 		}
 	})
 
 
 })
 
-function callSeries(url, total) {
 
-	for(var i = 1; i < total/100; i++) {
-		$.ajax({
+function callSeries(url, total, i) {
+
+	// for(var i = 1; i < total/100; i++) {
+	return $.ajax({
 			url: url + '&offset=' + i*100,
 			type: "GET",
 			success: function(data) {
@@ -251,13 +260,14 @@ function callSeries(url, total) {
 				console.log('total: ' + total);
 				parseSeriesHelper(data);
 
-				if(i > total/100) {
-					var lineData = parseSeries();
-					lineChart(lineData, '.modal-content');
-				}
+				// if(i > total/100) {
+				// 	console.log('larger than');
+				// 	var lineData = parseSeries();
+				// 	lineChart(lineData, '.modal-content');
+				// }
 			}
 		})
-	}
+	// }
 
 
 }
