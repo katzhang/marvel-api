@@ -202,7 +202,7 @@ function addPatterns(character) {
 
 d3.select(self.frameElement).style("height", diameter + "px");
 
-var seriesParsed = [];
+var seriesParsed = {};
 var ajaxSeriesCalls = [];
 
 $('svg').on('click', 'g', function(e) {
@@ -226,18 +226,19 @@ $('svg').on('click', 'g', function(e) {
 	$.ajax({
 		url: url,
 		type: "GET",
-		success: function(data) {
+		success: function(data, charId) {
 			console.log(data)
 			total = data.data.total;
+			seriesParsed[charId] = [];
 			console.log(total);
-			parseSeriesHelper(data);
+			parseSeriesHelper(data, charId);
 
 			for(var i = 1; i < total/100; i++) {
-				ajaxSeriesCalls.push(callSeries(url, total, i));
+				ajaxSeriesCalls.push(callSeries(url, total, i, charId));
 			}
 
 			$.when.apply(this, ajaxSeriesCalls).done(function() {
-				var lineData = parseSeries();
+				var lineData = parseSeries(charId);
 				lineChart(lineData, '.modal-content');
 			})
 
@@ -249,7 +250,7 @@ $('svg').on('click', 'g', function(e) {
 })
 
 
-function callSeries(url, total, i) {
+function callSeries(url, total, i, charId) {
 
 	// for(var i = 1; i < total/100; i++) {
 	return $.ajax({
@@ -258,7 +259,7 @@ function callSeries(url, total, i) {
 			success: function(data) {
 				console.log(data)
 				console.log('total: ' + total);
-				parseSeriesHelper(data);
+				parseSeriesHelper(data, charId);
 
 				// if(i > total/100) {
 				// 	console.log('larger than');
@@ -299,7 +300,7 @@ function countProp(array) {
 	return output;
 }
 
-function parseSeriesHelper(data) {
+function parseSeriesHelper(data, charId) {
 	var series = data.data.results;
 
 	series.forEach(function(serie) {
@@ -307,16 +308,19 @@ function parseSeriesHelper(data) {
 		var id = serie.id;
 		var startYear = serie.startYear;
 
-		seriesParsed.push({seriesTitle: title, seriesId: id, seriesStartYear: startYear});
+		if(startYear > 0) {
+			seriesParsed[charId].push({seriesTitle: title, seriesId: id, seriesStartYear: startYear});
+		}
+
 	})
 
 	console.log(seriesParsed);
 }
 
 
-function parseSeries() {
+function parseSeries(charId) {
 
-	var lineData = countProp(seriesParsed);
+	var lineData = countProp(seriesParsed[charId]);
 
 	lineData.sort(function(a,b) {
 		return a.date - b.date;
