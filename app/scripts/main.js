@@ -331,8 +331,10 @@ function parseSeries(charId) {
 
 function lineChart(data, context) {
 	var margin = {top: 20, right: 20, bottom: 30, left: 50},
-	    width = 960 - margin.left - margin.right,
-	    height = 500 - margin.top - margin.bottom;
+	    // width = 960 - margin.left - margin.right,
+	    // height = 500 - margin.top - margin.bottom;
+
+		width = $('.modal-content').width() - margin.left - margin.right, height = 400;
 
 	var parseDate = d3.time.format("%Y").parse;
 
@@ -372,6 +374,9 @@ function lineChart(data, context) {
 
 	  x.domain(d3.extent(data, function(d) { console.log(d); return d.date; }));
 	  y.domain(d3.extent(data, function(d) { return d.close; }));
+
+	  console.log(width);
+	  console.log(height);
 
 	  svg.append("g")
 	      .attr("class", "x axis")
