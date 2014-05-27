@@ -134,6 +134,7 @@ function init() {
 	ajaxCalls.push(ajaxCall('s', 100))
 
 	$.when.apply(this, ajaxCalls).done(function() {
+		$('.preloader').hide();
 		bindData({name: 'marvel', children: characters});
 	})
 }
