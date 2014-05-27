@@ -147,17 +147,18 @@ init();
 // })
 
 var diameter = 1024;
+var cbDiameter = $('.character-bubbles').width();
 var format = d3.format(",d");
 var color = d3.scale.category20c();
 
 var bubble = d3.layout.pack()
 	.sort(null)
-	.size([diameter, diameter])
+	.size([cbDiameter, cbDiameter])
 	.padding(1.5);
 
-var svg = d3.select("body").append("svg")
-	.attr("width", diameter)
-	.attr("height", diameter)
+var svg = d3.select(".character-bubbles").append("svg")
+	.attr("width", cbDiameter)
+	.attr("height", cbDiameter)
 	.attr("class", "bubble");
 
 var defs = svg.append('svg:defs');
@@ -200,7 +201,7 @@ function addPatterns(character) {
 	return "url(/#" + character.charId + ")"
 }
 
-d3.select(self.frameElement).style("height", diameter + "px");
+d3.select(self.frameElement).style("height", cbDiameter + "px");
 
 var seriesParsed = {};
 var ajaxSeriesCalls = [];
