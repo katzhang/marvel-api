@@ -1,10 +1,20 @@
-var Marvel = {
+var Ma = {
 
 	config: {
-		key: "587705ba5ff4d0cabadddbbbe5cb3545",
+		alphabet: "abcdefghijklmnopqrstuvwxyz",
 		baseUrl: "http://gateway.marvel.com:80/v1/public/",
+		key: "587705ba5ff4d0cabadddbbbe5cb3545",
 		limit: "100",
-		imgFormat: "standard_xlarge"
+		imgFormat: "standard_xlarge",
+		charDataKeys: [
+			'name',
+			'description',
+			'id',
+			['thumbnail', 'path'],
+			['thumbnail', 'extension'],
+			['stories', 'available'],
+			['series', 'collectionURI']
+		]
 	},
 
 	data: {
@@ -12,26 +22,59 @@ var Marvel = {
 		series: []
 	},
 
-	apiCall: function(url, callBack, filter) {
+	ajaxCalls: [],
 
+	apiCall: function(url, callBack, dataFilter) {
 		var settings = {
 			url: url,
 			cache: true,
+			dataType: "json",
 			success: function(data) {
 				callBack(data);
 			}
 		};
-
-		if(filter) settings[dataFilter] = filter;
-
+		if(dataFilter) settings[dataFilter] = dataFilter;
 		return $.ajax(settings);
 	},
 
-	parseData: function(data, output, outputKeys) {
+	generateUrl: function(entity, filter, offset) {
+		var url = Ma.config.baseUrl + entity + 'limit=' + Ma.config.limit + '&' + 'apikey=' + Ma.config.key + '&' + filter;
+		return offset ? url + offset : url;
+	},
+
+	parseCharData: function(data) {
+		console.log(data);
 		var results = data.data.results;
+		var outputKeys = Ma.config.charDataKeys;
 
 		results.forEach(function(result) {
+			var parsedResult = {};
+			outputKeys.forEach(function(key) {
+				if(Array.isArray(key)) {
+					parsedResult[key[0] + key[1]] = result[key[0]][key[1]];
+				} else {
+					parsedResult[key] = result[key];
+				}
+			})
 
+			Ma.data.characters.push(parsedResult);
+		})
+	},
+
+	init: function() {
+		var alphabetArray = Ma.config.alphabet.split('');
+
+		for(var i = 0; i < alphabetArray.length; i++) {
+			var callUrl = Ma.generateUrl('characters?', 'nameStartsWith=' + alphabetArray[i]);
+			var call = Ma.apiCall(callUrl, Ma.parseCharData);
+			Ma.ajaxCalls.push(call);
+		}
+
+		Ma.ajaxCalls.push(Ma.apiCall('characters?', 'nameStartsWith=s', '&offset=100'));
+
+		$.when.apply(Ma, Ma.ajaxCalls).done(function() {
+			console.log(Ma.data.characters);
+			// Ma.bindData({name: 'marvel', children: Ma.data.characters});
 		})
 	}
 
@@ -57,23 +100,7 @@ function ajaxCall(filterLetter, offset) {
 
 	return $.ajax({
 
-	   xhr: function() {
-	        var xhr = new window.XMLHttpRequest();
-
-	       xhr.addEventListener("progress", function(e) {
-				var percent = e.loaded / e.position * 100;
-		        $('.progress-bar').attr('aria-valuenow', percent);
-		        $('.progress-bar').css('width', percent + '%');
-	       }, false);
-
-	       return xhr;
-	    },
 		url: filteredUrl,
-		beforeSend: function(XHR) {
-			XHR.onprogress = function(e) {
-				console.log(e.loaded);
-			}
-		},
 		cache: true,
 		dataFilter: function(data, type) {
 			if(type === 'json') {
@@ -139,7 +166,9 @@ function init() {
 	})
 }
 
-init();
+// init();
+
+Ma.init();
 
 
 // $.when(ajaxCall('s'), ajaxCall('s', 100)).done(function() {
@@ -227,6 +256,7 @@ $('svg').on('click', 'g', function(e) {
 
 	$.ajax({
 		url: url,
+		dataType: "json",
 		type: "GET",
 		success: function(data, charId) {
 			console.log(data)
