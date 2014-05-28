@@ -113,4 +113,15 @@ body {
   stroke-width: 1.5px;
 }
 
+.character-bubbles {
+    height: 100%;
+    width: 100%;
+}
+
+body .container {
+    height: 100vh;
+    width: 100vw;
+    max-width: 100vw;
+}
+
 

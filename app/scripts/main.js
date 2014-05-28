@@ -166,9 +166,9 @@ function init() {
 	})
 }
 
-// init();
+init();
 
-Ma.init();
+// Ma.init();
 
 
 // $.when(ajaxCall('s'), ajaxCall('s', 100)).done(function() {
@@ -177,7 +177,7 @@ Ma.init();
 // })
 
 var diameter = 1024;
-var cbDiameter = $('.character-bubbles').width();
+var cbDiameter = $('.character-bubbles').height();
 var format = d3.format(",d");
 var color = d3.scale.category20c();
 
