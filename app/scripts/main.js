@@ -33,8 +33,24 @@ var Ma = {
 				callBack(data);
 			}
 		};
-		if(dataFilter) settings[dataFilter] = dataFilter;
+		if(dataFilter) settings['dataFilter'] = dataFilter;
 		return $.ajax(settings);
+	},
+
+	dataFilter: function(data, type) {
+		if(type === 'json') {
+			var parsed = JSON.parse(data);
+			var chars = parsed.data.results;
+			chars = $.grep(chars, function(char, i) {
+				if(char.thumbnail && char.thumbnail.path.match("available")) {
+					return false;
+				}
+				return true;
+			})
+			parsed.data.results = chars;
+		}
+
+		return JSON.stringify(parsed);
 	},
 
 	generateUrl: function(entity, filter, offset) {
@@ -42,7 +58,7 @@ var Ma = {
 		return offset ? url + offset : url;
 	},
 
-	parseCharData: function(data) {
+	parseCharData: function(data, valueKey) {
 		var results = data.data.results;
 		var outputKeys = Ma.config.charDataKeys;
 
@@ -56,8 +72,65 @@ var Ma = {
 				}
 			})
 
+			parsedResult['value'] = result.stories.available;
+
 			Ma.data.characters.push(parsedResult);
 		})
+	},
+
+	bindBubbleData: function(data) {
+		var diameter = 1024;
+		var cbDiameter = $('.character-bubbles').height();
+		var format = d3.format(",d");
+		var color = d3.scale.category20c();
+
+		var bubble = d3.layout.pack()
+			.sort(null)
+			.size([cbDiameter, cbDiameter])
+			.padding(1.5);
+
+		var svg = d3.select(".character-bubbles").append("svg")
+			.attr("width", cbDiameter)
+			.attr("height", cbDiameter)
+			.attr("class", "bubble");
+
+		var defs = svg.append('svg:defs');
+
+		var node = svg.selectAll(".node")
+			.data(bubble.nodes(data)
+	      	.filter(function(d) { return !d.children; }))
+			.enter().append("g")
+			.attr("class", "node")
+			.attr("data-char-id", function(d) { return d.id })
+			.attr("data-toggle", "modal")
+			.attr("data-target", ".bs-example-modal-lg")
+			.attr("transform", function(d) {
+				return "translate(" + d.x + "," + d.y + ")"
+			});
+
+		node.append("title")
+			.text(function(d) { return d.name + ":" + format(d.storiesavailable); });
+
+		node.append("circle")
+	    	.attr("r", function(d) { return d.r; })
+	       	.style("fill", function(d) { return Ma.addPatternsToBubble(defs, d) });
+
+	    d3.select(self.frameElement).style("height", cbDiameter + "px");
+	},
+
+	addPatternsToBubble: function(defs, character) {
+		defs.append('pattern')
+			.attr('id', character.id)
+			.attr('width', '100%')
+			.attr('height', '100%')
+			.append('image')
+			.attr('xlink:href', character.thumbnailpath + '/' + Ma.config.imgFormat + '.' + character.thumbnailextension)
+			.attr('x', 0)
+			.attr('y', 0)
+			.attr('width', character.r*2)
+			.attr('height', character.r*2);
+
+		return "url(/#" + character.id + ")"
 	},
 
 	init: function() {
@@ -65,18 +138,17 @@ var Ma = {
 
 		for(var i = 0; i < alphabetArray.length; i++) {
 			var callUrl = Ma.generateUrl('characters?', 'nameStartsWith=' + alphabetArray[i]);
-			var call = Ma.apiCall(callUrl, Ma.parseCharData);
+			var call = Ma.apiCall(callUrl, Ma.parseCharData, Ma.dataFilter);
 			Ma.ajaxCalls.push(call);
 		}
 
 		var altUrl = Ma.generateUrl('characters?', 'nameStartsWith=s', '&offset=100');
 
-		Ma.ajaxCalls.push(Ma.apiCall(altUrl, Ma.parseCharData));
+		Ma.ajaxCalls.push(Ma.apiCall(altUrl, Ma.parseCharData, Ma.dataFilter));
 
-		$.when.apply(Ma, Ma.ajaxCalls).then(function() {
-			console.log('done');
+		$.when.apply(Ma, Ma.ajaxCalls).done(function() {
 			console.log(Ma.data.characters);
-			// Ma.bindData({name: 'marvel', children: Ma.data.characters});
+			Ma.bindBubbleData({name: 'marvel', children: Ma.data.characters});
 		})
 	}
 
@@ -180,22 +252,22 @@ Ma.init();
 // 	bindData({name: 'marvel', children: characters});
 // })
 
-var diameter = 1024;
-var cbDiameter = $('.character-bubbles').height();
-var format = d3.format(",d");
-var color = d3.scale.category20c();
+// var diameter = 1024;
+// var cbDiameter = $('.character-bubbles').height();
+// var format = d3.format(",d");
+// var color = d3.scale.category20c();
 
-var bubble = d3.layout.pack()
-	.sort(null)
-	.size([cbDiameter, cbDiameter])
-	.padding(1.5);
+// var bubble = d3.layout.pack()
+// 	.sort(null)
+// 	.size([cbDiameter, cbDiameter])
+// 	.padding(1.5);
 
-var svg = d3.select(".character-bubbles").append("svg")
-	.attr("width", cbDiameter)
-	.attr("height", cbDiameter)
-	.attr("class", "bubble");
+// var svg = d3.select(".character-bubbles").append("svg")
+// 	.attr("width", cbDiameter)
+// 	.attr("height", cbDiameter)
+// 	.attr("class", "bubble");
 
-var defs = svg.append('svg:defs');
+// var defs = svg.append('svg:defs');
 
 // console.log(bubble.nodes(characters));
 
@@ -234,8 +306,6 @@ function addPatterns(character) {
 
 	return "url(/#" + character.charId + ")"
 }
-
-d3.select(self.frameElement).style("height", cbDiameter + "px");
 
 var seriesParsed = {};
 var ajaxSeriesCalls = [];
