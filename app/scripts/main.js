@@ -43,14 +43,13 @@ var Ma = {
 	},
 
 	parseCharData: function(data) {
-		console.log(data);
 		var results = data.data.results;
 		var outputKeys = Ma.config.charDataKeys;
 
 		results.forEach(function(result) {
 			var parsedResult = {};
 			outputKeys.forEach(function(key) {
-				if(Array.isArray(key)) {
+				if(Array.isArray(key) && result[key[0]]) {
 					parsedResult[key[0] + key[1]] = result[key[0]][key[1]];
 				} else {
 					parsedResult[key] = result[key];
@@ -70,9 +69,12 @@ var Ma = {
 			Ma.ajaxCalls.push(call);
 		}
 
-		Ma.ajaxCalls.push(Ma.apiCall('characters?', 'nameStartsWith=s', '&offset=100'));
+		var altUrl = Ma.generateUrl('characters?', 'nameStartsWith=s', '&offset=100');
 
-		$.when.apply(Ma, Ma.ajaxCalls).done(function() {
+		Ma.ajaxCalls.push(Ma.apiCall(altUrl, Ma.parseCharData));
+
+		$.when.apply(Ma, Ma.ajaxCalls).then(function() {
+			console.log('done');
 			console.log(Ma.data.characters);
 			// Ma.bindData({name: 'marvel', children: Ma.data.characters});
 		})
@@ -107,7 +109,7 @@ function ajaxCall(filterLetter, offset) {
 				var parsed = JSON.parse(data);
 				var chars = parsed.data.results;
 				chars = $.grep(chars, function(char, i) {
-					if(char.thumbnail.path.match("available")) {
+					if(char.thumbnail && char.thumbnail.path.match("available")) {
 						return false;
 					}
 					return true;
@@ -132,18 +134,20 @@ function ajaxCall(filterLetter, offset) {
 			// console.log(XHR.getAllResponseHeaders());
 
 			results.forEach(function(character) {
-				var name = character.name;
-				var des = character.description;
-				var charId = character.id;
-				var thumbnailPath = character.thumbnail.path;
-				var thumbnailExt = character.thumbnail.extension;
-				var storiesNum = character.stories.available;
+				if(character.thumbnail) {
+					var name = character.name;
+					var des = character.description;
+					var charId = character.id;
+					var thumbnailPath = character.thumbnail.path;
+					var thumbnailExt = character.thumbnail.extension;
+					var storiesNum = character.stories.available;
 
-				thumbnailPath += "/standard_xlarge" + "." + thumbnailExt;
+					thumbnailPath += "/standard_xlarge" + "." + thumbnailExt;
 
-				characters.push({"charName": name, "charId": charId,"value": storiesNum, "imgPath": thumbnailPath});
+					characters.push({"charName": name, "charId": charId,"value": storiesNum, "imgPath": thumbnailPath});
 
-				dataParsed.push(character);
+					dataParsed.push(character);
+				}
 
 			})
 		}
@@ -166,9 +170,9 @@ function init() {
 	})
 }
 
-init();
+// init();
 
-// Ma.init();
+Ma.init();
 
 
 // $.when(ajaxCall('s'), ajaxCall('s', 100)).done(function() {
