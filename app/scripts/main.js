@@ -306,7 +306,8 @@ var Ma = {
 			}
 
 			var eventsUrl = character.seriescollectionURI;
-			var url = eventsUrl + "?" + key + '&limit=100';
+			var url = eventsUrl + "?" + 'apikey=' + Ma.config.key + '&limit=100';
+			console.log(url);
 			var total;
 
 			$.ajax({
@@ -557,6 +558,7 @@ $('svg').on('click', 'g', function(e) {
 
 	var eventsUrl = character.series.collectionURI;
 	var url = eventsUrl + "?" + key + '&limit=100';
+	console.log(url);
 	var total;
 
 	$.ajax({
