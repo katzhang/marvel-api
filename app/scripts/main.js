@@ -149,6 +149,7 @@ var Ma = {
 
 		$.when.apply(Ma, Ma.ajaxCalls).done(function() {
 			console.log(Ma.data.characters);
+			$('.character-bubbles').removeClass('loading');
 			Ma.bindBubbleData({name: 'marvel', children: Ma.data.characters});
 			Ma.seriesEventHandler();
 		})
@@ -280,7 +281,7 @@ var Ma = {
 		      .attr("y", 6)
 		      .attr("dy", ".71em")
 		      .style("text-anchor", "end")
-		      .text("Price ($)");
+		      .text("Number of Series");
 
 		  svg.append("path")
 		      .datum(data)
